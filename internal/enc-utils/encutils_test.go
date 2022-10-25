@@ -2,8 +2,8 @@ package encutils
 
 import (
 	"encoding/hex"
-	"testing"
 	"reflect"
+	"testing"
 )
 
 type deriveSecretKeyTest struct {
@@ -19,9 +19,8 @@ type encryptTest struct {
 
 type testData struct {
 	Data string
-	Num float64
+	Num  float64
 }
-
 
 var deriveSecretKeyTests = []deriveSecretKeyTest{
 	{"testpass", "salt", "670a009a135f98a87c5b8ad8ed22da447f18454779d5e215b8c6f3ad20084e01"},
@@ -35,7 +34,6 @@ var encryptTests = []encryptTest{
 	{"670a009a135f98a87c5b8ad8ed22da447f18454779d5e215b8c6f3ad20084e01", 24, 60},
 	{"670a009a135f98a87c5b8ad8ed22da447f18454779d5e215b8c6f3ad20084e01", testData{"test", 3.14}, 108},
 }
-
 
 func TestDeriveSecretKey(t *testing.T) {
 	for _, test := range deriveSecretKeyTests {
@@ -73,17 +71,17 @@ func TestDecrypt(t *testing.T) {
 		case "string":
 			var result string
 			if _ = Decrypt(key, ciphertext, &result); result != test.data {
-			t.Errorf("test output '%s' is not equal to expected string '%s'", result, test.data)
+				t.Errorf("test output '%s' is not equal to expected string '%s'", result, test.data)
 			}
 		case "int":
 			var result int
 			if _ = Decrypt(key, ciphertext, &result); result != test.data {
-			t.Errorf("test output '%d' is not equal to expected int '%d'", result, test.data)
+				t.Errorf("test output '%d' is not equal to expected int '%d'", result, test.data)
 			}
 		case "encutils.testData":
 			var result testData
 			if _ = Decrypt(key, ciphertext, &result); result != test.data {
-			t.Errorf("test output '%v' is not equal to expected struct '%v'", result, test.data)
+				t.Errorf("test output '%v' is not equal to expected struct '%v'", result, test.data)
 			}
 		}
 	}
