@@ -13,16 +13,17 @@ type User struct {
 }
 
 func parseFlags() {
-	flag.BoolVar(&admin, "a", false, "Administrator login")
+	flag.BoolVar(&admin, "admin", false, "Administrator login")
 	flag.Parse()
 }
 
 func main() {
-	authdb.InitializeDb()
+	db := authdb.InitializeDb()
+	defer db.Close()
 	parseFlags()
 
 	if admin {
-		adminMain()
+		adminMain(db)
 	} else {
 		serverMain()
 	}

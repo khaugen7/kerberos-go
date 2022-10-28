@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/dixonwille/wmenu v4.0.2+incompatible
+	github.com/mattn/go-sqlite3 v1.14.16
 	golang.org/x/term v0.1.0
 )
 
