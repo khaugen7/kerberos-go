@@ -1,4 +1,4 @@
-package encutils
+package encryption
 
 import (
 	"encoding/hex"
@@ -44,10 +44,8 @@ func TestDeriveSecretKey(t *testing.T) {
 }
 
 func TestGenerateRandomBytes(t *testing.T) {
-	output, err := GenerateRandomBytes(32)
-	if err != nil {
-		t.Error("Error thrown: ", err)
-	} else if len(output) != 32 {
+	output := GenerateRandomBytes(32)
+	if len(output) != 32 {
 		t.Error("Output length != 32")
 	}
 }

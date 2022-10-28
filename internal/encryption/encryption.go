@@ -1,4 +1,4 @@
-package encutils
+package encryption
 
 import (
 	"crypto/aes"
@@ -12,8 +12,8 @@ import (
 
 const RealmName = "@KERBEROS"
 
-func DeriveSecretKey(password string, salt string) []byte {
-	saltedPass := []byte(RealmName + password + salt)
+func DeriveSecretKey(username, password string) []byte {
+	saltedPass := []byte(RealmName + username + password)
 	h := sha256.New()
 	_, err := h.Write(saltedPass)
 	if err != nil {
@@ -23,13 +23,10 @@ func DeriveSecretKey(password string, salt string) []byte {
 	return h.Sum(nil)
 }
 
-func GenerateRandomBytes(n int) ([]byte, error) {
+func GenerateRandomBytes(n int) []byte {
 	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
+	_, _ = rand.Read(b)
+	return b
 }
 
 func Encrypt(key []byte, data any) ([]byte, error) {
