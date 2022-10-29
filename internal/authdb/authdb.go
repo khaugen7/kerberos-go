@@ -40,7 +40,7 @@ func createUserTable(db *sql.DB) {
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		"first_name" TEXT,
 		"last_name" TEXT,
-        "username" TEXT,
+        "username" TEXT UNIQUE,
         "key" TEXT);`
 	query, err := db.Prepare(users_table)
 	if err != nil {
@@ -62,9 +62,24 @@ func AddUser(user UserAuth, db *sql.DB) {
 	log.Printf("Added Successfully\nUser: %s %s\nUsername: %s\n", user.FirstName, user.LastName, user.Username)
 }
 
+func UpdateUser(idToUpdate int, newInfo UserAuth, db *sql.DB) {
+	stmt, _ := db.Prepare("UPDATE user_auth SET first_name = ?, last_name = ?, username = ?, key = ? WHERE id = ?")
+	defer stmt.Close()
+	stmt.Exec(newInfo.FirstName, newInfo.LastName, newInfo.Username, newInfo.Key, idToUpdate)
+
+	log.Printf("User %s updated successfully", newInfo.Username)
+}
+
+func DeleteUser(idToDelete int, username string, db *sql.DB) {
+	stmt, _ := db.Prepare("DELETE FROM user_auth WHERE id = ?")
+	defer stmt.Close()
+	stmt.Exec(idToDelete)
+
+	log.Printf("User %s deleted successfully", username)
+}
+
 func FindUserByUsername(username string, db *sql.DB) []UserAuth {
-	username = "%" + username + "%"
-	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username FROM user_auth WHERE username LIKE ?")
+	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username, key FROM user_auth WHERE username = ? COLLATE NOCASE")
 	defer stmt.Close()
 	rows, err := stmt.Query(username)
 	if err != nil {
@@ -76,7 +91,7 @@ func FindUserByUsername(username string, db *sql.DB) []UserAuth {
 
 func FindUserByFirstName(name string, db *sql.DB) []UserAuth {
 	name = "%" + name + "%"
-	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username FROM user_auth WHERE first_name LIKE ?")
+	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username, key FROM user_auth WHERE first_name LIKE ?")
 	defer stmt.Close()
 	rows, err := stmt.Query(name)
 	if err != nil {
@@ -88,7 +103,7 @@ func FindUserByFirstName(name string, db *sql.DB) []UserAuth {
 
 func FindUserByLastName(name string, db *sql.DB) []UserAuth {
 	name = "%" + name + "%"
-	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username FROM user_auth WHERE last_name LIKE ?")
+	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username, key FROM user_auth WHERE last_name LIKE ?")
 	defer stmt.Close()
 	rows, err := stmt.Query(name)
 	if err != nil {
@@ -106,7 +121,7 @@ func FindUserByFirstAndLastName(name string, db *sql.DB) []UserAuth {
 	}
 	first := "%" + names[0] + "%"
 	last := "%" + names[1] + "%"
-	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username FROM user_auth WHERE first_name LIKE ? AND last_name LIKE ?")
+	stmt, _ := db.Prepare("SELECT id, first_name, last_name, username, key FROM user_auth WHERE first_name LIKE ? AND last_name LIKE ?")
 	defer stmt.Close()
 	rows, err := stmt.Query(first, last)
 	if err != nil {
@@ -122,7 +137,7 @@ func populateResultSlice(rows *sql.Rows) []UserAuth {
 
 	for rows.Next() {
 		user := UserAuth{}
-		err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Username)
+		err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Username, &user.Key)
 		if err != nil {
 			log.Fatal(err)
 		}

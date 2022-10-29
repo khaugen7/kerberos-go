@@ -7,9 +7,15 @@ import (
 	"github.com/khaugen7/kerberos-go/internal/authdb"
 )
 
-var stdinInput = "John\nDoe\njdoe42\nmypass123\n"
+type credentialsTest struct {
+	input string
+	user  string
+	pass  string
+}
 
-var expected = authdb.UserAuth{
+var stdinInputForUser = "John\nDoe\njdoe42\nmypass123\n"
+
+var expectedUserResult = authdb.UserAuth{
 	Id:        0,
 	FirstName: "John",
 	LastName:  "Doe",
@@ -18,17 +24,17 @@ var expected = authdb.UserAuth{
 }
 
 func TestGatherUserInfo(t *testing.T) {
-	funcDefer, err := mockStdin(t, stdinInput)
+	cleanup, err := mockStdin(t, stdinInputForUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer funcDefer()
+	defer cleanup()
 
 	actual := gatherUserInfo()
 
-	if actual != expected {
-		t.Errorf("Actual output %v did not match expected output %v", actual, expected)
+	if actual != expectedUserResult {
+		t.Errorf("Actual output %v did not match expected output %v", actual, expectedUserResult)
 	}
 }
 

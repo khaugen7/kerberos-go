@@ -22,23 +22,28 @@ func adminMain(db *sql.DB) {
 	username, password, _ := credentials()
 	if username == "admin" && password == "admin" {
 
-		fmt.Println("\n\nADMINISTRATOR MENU")
 		adminMenu = wmenu.NewMenu("What would you like to do?")
-
 		adminMenu.Action(func(opts []wmenu.Opt) error { handleFunc(db, opts); return nil })
-
 		adminMenu.Option("Add a new User", 0, false, nil)
 		adminMenu.Option("Find a user", 1, false, nil)
 		adminMenu.Option("Update user information", 2, false, nil)
-		adminMenu.Option("Delete a person by ID", 3, false, nil)
+		adminMenu.Option("Delete a user", 3, false, nil)
 		adminMenu.Option("Quit", 4, false, nil)
-		menuerr := adminMenu.Run()
 
+		runAdminMenu()
+
+	} else {
+		log.Fatal("Invalid administrator credentials")
+	}
+}
+
+func runAdminMenu() {
+	for true {
+		fmt.Println("\n\nADMINISTRATOR MENU")
+		menuerr := adminMenu.Run()
 		if menuerr != nil {
 			log.Fatal(menuerr)
 		}
-	} else {
-		log.Fatal("Invalid administrator credentials")
 	}
 }
 
@@ -66,21 +71,23 @@ func handleFunc(db *sql.DB, opts []wmenu.Opt) {
 	switch opts[0].Value {
 
 	case 0:
-		fmt.Println("Adding a new user")
+		fmt.Println("\nADDING USER")
 		newUser := gatherUserInfo()
 		authdb.AddUser(newUser, db)
 	case 1:
-		fmt.Println("Finding users")
+		fmt.Println("\nFINDING USERS")
 		findUser(db)
 	case 2:
-		fmt.Println("Updating user information")
+		fmt.Println("\nUPDATING USER INFORMATION")
+		updateUserInfo(db)
 	case 3:
-		fmt.Println("Deleting a user by ID")
+		fmt.Println("\nDELETING USER")
+		deleteUser(db)
 	case 4:
-		fmt.Println("Quitting application")
+		fmt.Println("\nQuitting application.")
+		os.Exit(0)
 	default:
-		fmt.Println("Please select an option. '4' to quit.")
-		adminMenu.Run()
+		fmt.Println("\nPlease select an option. '4' to quit.")
 	}
 }
 
@@ -176,4 +183,72 @@ func findFunc(db *sql.DB, opts []wmenu.Opt) {
 	for _, user := range results {
 		log.Printf("{id: %d, first_name: %s, last_name: %s, username: %s}", user.Id, user.FirstName, user.LastName, user.Username)
 	}
+}
+
+func updateUserInfo(db *sql.DB) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("Enter username of user you wish to update: ")
+	currentUser := getUserByUsername(reader, db)
+	updatedUser := currentUser
+
+	fmt.Println("Enter updated information. Leave any field empty to keep it the same.")
+
+	fmt.Printf("\nCurrent first name: %s\nNew first name: ", currentUser.FirstName)
+	firstName, _ := reader.ReadString('\n')
+	firstName = strings.TrimSpace(firstName)
+	if firstName != "" {
+		updatedUser.FirstName = firstName
+	}
+
+	fmt.Printf("\nCurrent last name: %s\nNew last name: ", currentUser.LastName)
+	lastName, _ := reader.ReadString('\n')
+	lastName = strings.TrimSpace(lastName)
+	if lastName != "" {
+		updatedUser.LastName = lastName
+	}
+
+	fmt.Printf("\nCurrent username: %s\nNew username: ", currentUser.Username)
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
+	if username != "" {
+		updatedUser.Username = username
+	}
+
+	fmt.Println("\nEnter new password (leave empty to keep the same): ")
+	password, _ := reader.ReadString('\n')
+
+	if password != "\n" {
+		key := encryption.DeriveSecretKey(username, password)
+		updatedUser.Key = hex.EncodeToString(key)
+	}
+
+	authdb.UpdateUser(currentUser.Id, updatedUser, db)
+}
+
+func deleteUser(db *sql.DB) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("Enter username of user you wish to delete: ")
+	user := getUserByUsername(reader, db)
+	fmt.Printf("Deleting user: {id: %d, first_name: %s, last_name: %s, username: %s}\nAre you sure you wish to proceed? y/n: ",
+		user.Id, user.FirstName, user.LastName, user.Username)
+	confirm, _ := reader.ReadString('\n')
+	confirm = strings.ToLower(strings.TrimSpace(confirm))
+	if confirm == "y" || confirm == "yes" {
+		authdb.DeleteUser(user.Id, user.Username, db)
+	} else {
+		fmt.Printf("User %s was not deleted.", user.Username)
+	}
+}
+
+func getUserByUsername(reader *bufio.Reader, db *sql.DB) authdb.UserAuth {
+	currentUsername, _ := reader.ReadString('\n')
+	currentUsername = strings.TrimSpace(currentUsername)
+	currentUserSlice := authdb.FindUserByUsername(currentUsername, db)
+	if len(currentUserSlice) == 0 {
+		log.Println("No users found for that username.")
+		os.Exit(0)
+	}
+	return currentUserSlice[0]
 }
