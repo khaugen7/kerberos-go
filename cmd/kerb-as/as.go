@@ -8,12 +8,19 @@ import (
 
 var admin bool
 
+var (
+	host string
+	port int
+)
+
 type User struct {
 	username, key string
 }
 
 func parseFlags() {
 	flag.BoolVar(&admin, "admin", false, "Administrator login")
+	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
+	flag.IntVar(&port, "p", 8555, "Server port")
 	flag.Parse()
 }
 
@@ -25,6 +32,6 @@ func main() {
 	if admin {
 		adminMain(db)
 	} else {
-		serverMain()
+		serverMain(host, port, db)
 	}
 }

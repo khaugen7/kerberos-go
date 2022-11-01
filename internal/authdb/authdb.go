@@ -2,10 +2,12 @@ package authdb
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/khaugen7/kerberos-go/internal/encryption"
 	"github.com/khaugen7/kerberos-go/internal/utils"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -32,6 +34,9 @@ func InitializeDb() *sql.DB {
 		log.Fatal("Unable to connect to database:", err)
 	}
 	createUserTable(db)
+	createKeyTable(db)
+	insertSharedKeys(db)
+	log.Println("Authentication Server: Initialization complete.")
 	return db
 }
 
@@ -51,7 +56,45 @@ func createUserTable(db *sql.DB) {
 		log.Fatal(err)
 	}
 	query.Close()
-	log.Println("Authentication Server: Initialization complete.")
+}
+
+func createKeyTable(db *sql.DB) {
+	keys_table := `CREATE TABLE IF NOT EXISTS keys (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		"key_name" TEXT UNIQUE,
+		"key" TEXT);`
+	query, err := db.Prepare(keys_table)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = query.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	query.Close()
+}
+
+func insertSharedKeys(db *sql.DB) {
+	stmt, _ := db.Prepare("INSERT OR IGNORE INTO keys (id, key_name, key) VALUES (?, ?, ?)")
+	defer stmt.Close()
+
+	as_tgsKey := hex.EncodeToString(encryption.GenerateRandomBytes(32))
+	tgs_fsKey := hex.EncodeToString(encryption.GenerateRandomBytes(32))
+
+	stmt.Exec(nil, "as-tgs", as_tgsKey)
+	stmt.Exec(nil, "tgs-fs", tgs_fsKey)
+}
+
+func GetSharedKey(keyName string, db *sql.DB) string {
+	stmt, _ := db.Prepare("SELECT key FROM keys WHERE key_name = ?")
+	defer stmt.Close()
+
+	var key string
+	err := stmt.QueryRow(keyName).Scan(&key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return key
 }
 
 func AddUser(user UserAuth, db *sql.DB) {
