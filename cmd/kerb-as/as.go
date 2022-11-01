@@ -7,6 +7,7 @@ import (
 )
 
 var admin bool
+var sqlitePath string
 
 var (
 	host string
@@ -19,15 +20,16 @@ type User struct {
 
 func parseFlags() {
 	flag.BoolVar(&admin, "admin", false, "Administrator login")
+	flag.StringVar(&sqlitePath, "db", "", "Directory for Sqlite db")
 	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
 	flag.IntVar(&port, "p", 8555, "Server port")
 	flag.Parse()
 }
 
 func main() {
-	db := authdb.InitializeDb()
-	defer db.Close()
 	parseFlags()
+	db := authdb.InitializeDb(sqlitePath)
+	defer db.Close()
 
 	if admin {
 		adminMain(db)

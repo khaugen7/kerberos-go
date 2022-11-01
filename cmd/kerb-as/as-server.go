@@ -66,10 +66,10 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	encTgsSessionKey, _ := encryption.Encrypt(userKey, tgsSessionKey)
 	keyLen := strconv.Itoa(len(encTgsSessionKey))
 
-	respone := append(encTgsSessionKey, encTgt...)
+	response := append(encTgsSessionKey, encTgt...)
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("X-Key-Length", keyLen)
 
-	w.Write(respone)
+	w.Write(response)
 }

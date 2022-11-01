@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/khaugen7/kerberos-go/internal/encryption"
@@ -20,24 +21,43 @@ type UserAuth struct {
 	Key       string
 }
 
-func InitializeDb() *sql.DB {
-	if !utils.FileExists("kerberos.db") {
+func InitializeDb(path string) *sql.DB {
+	dbFile := constructDbPath(path)
+	if !utils.FileExists(dbFile) {
 		log.Println("Running first time setup...")
-		file, err := os.Create("kerberos.db")
+		file, err := os.Create(dbFile)
 		if err != nil {
 			log.Fatal(err)
 		}
 		file.Close()
 	}
-	db, err := sql.Open("sqlite3", "kerberos.db")
-	if err != nil {
-		log.Fatal("Unable to connect to database:", err)
-	}
+	db := SqliteConnect(dbFile)
+
 	createUserTable(db)
 	createKeyTable(db)
 	insertSharedKeys(db)
-	log.Println("Authentication Server: Initialization complete.")
+	log.Println("Server: Initialization complete.")
 	return db
+}
+
+func SqliteConnect(path string) *sql.DB {
+	dbFile := constructDbPath(path)
+	if !utils.FileExists(dbFile) {
+		log.Fatal("Database file does not exist")
+	}
+
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		log.Fatal("Unable to connect to database:", err)
+	}
+	return db
+}
+
+func constructDbPath(path string) string {
+	if strings.HasSuffix(path, "kerberos.db") {
+		return path
+	}
+	return filepath.Join(path, "kerberos.db")
 }
 
 func createUserTable(db *sql.DB) {
