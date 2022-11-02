@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/khaugen7/kerberos-go/internal/authdb"
 	"github.com/khaugen7/kerberos-go/internal/encryption"
@@ -47,14 +46,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := foundUsers[0]
-	tgsSessionKey := encryption.GenerateRandomBytes(32)
-	valid := time.Now().Add(time.Hour * 1)
-
-	tgt := kerb.Ticket{
-		Username:   username,
-		SessionKey: tgsSessionKey,
-		Validity:   valid,
-	}
+	tgt := kerb.GenerateTicket(user.Username)
 
 	userKey, _ := hex.DecodeString(user.Key)
 
@@ -63,7 +55,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	encTgt, _ := encryption.Encrypt(asTgsKey, tgt)
 
 	// Encrypt user-TGS session key with user key
-	encTgsSessionKey, _ := encryption.Encrypt(userKey, tgsSessionKey)
+	encTgsSessionKey, _ := encryption.Encrypt(userKey, tgt.SessionKey)
 	keyLen := strconv.Itoa(len(encTgsSessionKey))
 
 	response := append(encTgsSessionKey, encTgt...)

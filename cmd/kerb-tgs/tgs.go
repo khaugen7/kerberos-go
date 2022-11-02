@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/khaugen7/kerberos-go/internal/authdb"
 	"github.com/khaugen7/kerberos-go/internal/encryption"
@@ -76,12 +75,12 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Failed to decrypt client authenticator")
 	}
 
-	if !validateClient(auth, ticket) {
+	if !kerb.ValidateClient(auth, ticket) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	serviceTicket := generateTicket(auth.Username)
+	serviceTicket := kerb.GenerateTicket(auth.Username)
 
 	// Encrypt Service Ticket with shared key between TGS and FS
 	tgsFsKey, _ := hex.DecodeString(authdb.GetSharedKey("tgs-fs", db))
@@ -97,19 +96,4 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Key-Length", keyLen)
 
 	w.Write(response)
-}
-
-func validateClient(auth kerb.Autheticator, ticket kerb.Ticket) bool {
-	return auth.Username == ticket.Username && auth.Timestamp.Before(ticket.Validity)
-}
-
-func generateTicket(username string) kerb.Ticket {
-	fsSessionKey := encryption.GenerateRandomBytes(32)
-	valid := time.Now().Add(time.Hour * 1)
-
-	return kerb.Ticket{
-		Username:   username,
-		SessionKey: fsSessionKey,
-		Validity:   valid,
-	}
 }
