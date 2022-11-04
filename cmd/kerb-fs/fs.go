@@ -27,7 +27,7 @@ var (
 )
 
 func parseFlags() {
-	flag.StringVar(&sqlitePath, "d", "", "Directory for Sqlite db")
+	flag.StringVar(&sqlitePath, "db", "", "Directory for Sqlite db")
 	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
 	flag.IntVar(&port, "p", 8755, "Server port")
 	flag.Parse()
@@ -61,11 +61,9 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	content, _ := ioutil.ReadAll(r.Body)
 	encTicket, encAuth := content[:tickLen], content[tickLen:]
 
-	var ticket kerb.Ticket
-	var auth kerb.Autheticator
-
 	tgsFsKey, _ := hex.DecodeString(authdb.GetSharedKey("tgs-fs", db))
 
+	var ticket kerb.Ticket
 	err := encryption.Decrypt(tgsFsKey, encTicket, &ticket)
 	if err != nil {
 		log.Fatal("Failed to decrypt ticket")
@@ -73,6 +71,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	clientSessionKey := ticket.SessionKey
 
+	var auth kerb.Autheticator
 	err = encryption.Decrypt(clientSessionKey, encAuth, &auth)
 	if err != nil {
 		log.Fatal("Failed to decrypt client authenticator")
@@ -85,6 +84,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	filePath := strings.Split(r.URL.Path, "/download/")
 	reqFile := filePath[len(filePath)-1]
+	reqFile = "./files/" + reqFile
 
 	if !utils.FileExists(reqFile) {
 		w.WriteHeader(http.StatusNotFound)
@@ -98,7 +98,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", "attachment; " + filepath.Base(reqFile))
+	w.Header().Set("Content-Disposition", "attachment; filename=" + filepath.Base(reqFile))
 	w.Write(b)
 }
 

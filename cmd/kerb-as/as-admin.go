@@ -8,18 +8,18 @@ import (
 	"log"
 	"os"
 	"strings"
-	"syscall"
 
 	"github.com/dixonwille/wmenu"
 	"github.com/khaugen7/kerberos-go/internal/authdb"
 	"github.com/khaugen7/kerberos-go/internal/encryption"
-	"golang.org/x/term"
+	"github.com/khaugen7/kerberos-go/internal/utils"
 )
 
 var adminMenu, findMenu *wmenu.Menu
 
 func adminMain(db *sql.DB) {
-	username, password, _ := credentials()
+	fmt.Println("Enter Administrator credentials")
+	username, password, _ := utils.Credentials()
 	if username == "admin" && password == "admin" {
 
 		adminMenu = wmenu.NewMenu("What would you like to do?")
@@ -45,25 +45,6 @@ func runAdminMenu() {
 			log.Fatal(menuerr)
 		}
 	}
-}
-
-func credentials() (string, string, error) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter Administrator Username: ")
-	username, err := reader.ReadString('\n')
-	if err != nil {
-		return "", "", err
-	}
-
-	fmt.Print("Enter Administrator Password: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return "", "", err
-	}
-
-	password := string(bytePassword)
-	return strings.TrimSpace(username), password, nil
 }
 
 func handleFunc(db *sql.DB, opts []wmenu.Opt) {
@@ -108,6 +89,7 @@ func gatherUserInfo() authdb.UserAuth {
 
 	fmt.Println("Enter password: ")
 	password, _ := reader.ReadString('\n')
+	password = strings.TrimSpace(password)
 
 	key := encryption.DeriveSecretKey(username, password)
 	stringKey := hex.EncodeToString(key)
@@ -217,8 +199,9 @@ func updateUserInfo(db *sql.DB) {
 
 	fmt.Println("\nEnter new password (leave empty to keep the same): ")
 	password, _ := reader.ReadString('\n')
+	password = strings.TrimSpace(password)
 
-	if password != "\n" {
+	if password != "" {
 		key := encryption.DeriveSecretKey(username, password)
 		updatedUser.Key = hex.EncodeToString(key)
 	}

@@ -24,7 +24,7 @@ var (
 )
 
 func parseFlags() {
-	flag.StringVar(&sqlitePath, "d", "", "Directory for Sqlite db")
+	flag.StringVar(&sqlitePath, "db", "", "Directory for Sqlite db")
 	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
 	flag.IntVar(&port, "p", 8655, "Server port")
 	flag.Parse()
@@ -58,11 +58,9 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 	content, _ := ioutil.ReadAll(r.Body)
 	encTicket, encAuth := content[:tickLen], content[tickLen:]
 
-	var ticket kerb.Ticket
-	var auth kerb.Autheticator
-
 	asTgsKey, _ := hex.DecodeString(authdb.GetSharedKey("as-tgs", db))
 
+	var ticket kerb.Ticket
 	err := encryption.Decrypt(asTgsKey, encTicket, &ticket)
 	if err != nil {
 		log.Fatal("Failed to decrypt ticket")
@@ -70,6 +68,7 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 
 	clientSessionKey := ticket.SessionKey
 
+	var auth kerb.Autheticator
 	err = encryption.Decrypt(clientSessionKey, encAuth, &auth)
 	if err != nil {
 		log.Fatal("Failed to decrypt client authenticator")
@@ -87,7 +86,7 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 	encServiceTicket, _ := encryption.Encrypt(tgsFsKey, serviceTicket)
 
 	// Encrypt client-FS session key with client-TGS session key
-	encFsSessionKey, _ := encryption.Encrypt(clientSessionKey, ticket.SessionKey)
+	encFsSessionKey, _ := encryption.Encrypt(clientSessionKey, serviceTicket.SessionKey)
 	keyLen := strconv.Itoa(len(encFsSessionKey))
 
 	response := append(encFsSessionKey, encServiceTicket...)
