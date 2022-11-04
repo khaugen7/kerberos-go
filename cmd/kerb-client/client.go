@@ -52,17 +52,10 @@ func main() {
 	asAddr, tgsAddr, fsAddr := buildUrls()
 
 	fmt.Println("Welcome to my Kerberos Authentication demo!")
-	fmt.Print("If you would like step-by-step explanations about how Kerberos works, please run the client with the -v (verbose) flag.\n\n")
 
-	logVerbose("Kerberos has four main components (at least it does in my simplified demo):\n")
-	logVerbose("1. Client that requests a resource or service (that's this program!)\n")
-	logVerbose("2. Authentication server (AS) that maintains a database of pre-shared user credentials and provides the user with a ticket-granting ticket\n")
-	logVerbose("3. Ticket granting server (TGS) that validates the ticket granting ticket from the AS and provides a service ticket to a validated user\n")
-	logVerbose("4. File server (FS) that validates the service ticket and provides the requested resource to the user\n\n")
-
-	logVerbose("The first step is typing your credentials. These will be the same pre-shared credentials that reside in the authentication database.\n")
 	u, p, _ := utils.Credentials()
 
+	logVerbose("Requesting authentication for user " + u + " with Kerberos authentication server")
 	encTgsSessionKey, tgt := requestAuthorization(u, asAddr)
 
 	userKey := encryption.DeriveSecretKey(u, p)
@@ -76,6 +69,7 @@ func main() {
 	tgsAuth := generateAuth(u)
 	encTgsAuth, _ := encryption.Encrypt(tgsSessionKey, tgsAuth)
 
+	logVerbose("Requesting service ticket from ticket granting server")
 	encFsSessionKey, st := requestServiceTicket(encTgsAuth, tgt, tgsAddr)
 
 	var fsSessionKey []byte
@@ -84,7 +78,9 @@ func main() {
 	fsAuth := generateAuth(u)
 	encFsAuth, _ := encryption.Encrypt(fsSessionKey, fsAuth)
 
-	requestFile(encFsAuth, st, reqFile, fsAddr)
+	logVerbose("")
+	file := requestFile(encFsAuth, st, reqFile, fsAddr)
+	fmt.Printf("Successfully authenticated via the Kerberos protocol and retrieved file %s", file)
 }
 
 func requestAuthorization(username, asAddr string) ([]byte, []byte) {
@@ -142,7 +138,7 @@ func requestServiceTicket(auth []byte, encTicket []byte, tgsAddr string) ([]byte
 	return resBody[:keyLen], resBody[keyLen:]
 }
 
-func requestFile(auth []byte, encTicket []byte, reqFile string, fsAddr string) {
+func requestFile(auth []byte, encTicket []byte, reqFile string, fsAddr string) string {
 	c := http.Client{
 		Timeout: time.Duration(5) * time.Second,
 	}
@@ -176,6 +172,7 @@ func requestFile(auth []byte, encTicket []byte, reqFile string, fsAddr string) {
 	}
 
 	file.Write(resBody)
+	return filename
 }
 
 func generateAuth(username string) kerb.Autheticator {

@@ -66,7 +66,9 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	var ticket kerb.Ticket
 	err := encryption.Decrypt(tgsFsKey, encTicket, &ticket)
 	if err != nil {
-		log.Fatal("Failed to decrypt ticket")
+		log.Print("Failed to decrypt ticket")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 
 	clientSessionKey := ticket.SessionKey
@@ -74,11 +76,13 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	var auth kerb.Autheticator
 	err = encryption.Decrypt(clientSessionKey, encAuth, &auth)
 	if err != nil {
-		log.Fatal("Failed to decrypt client authenticator")
+		log.Printf("Failed to decrypt client authenticator for user %s", ticket.Username)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 
 	if !kerb.ValidateClient(auth, ticket) {
-		w.WriteHeader(http.StatusForbidden)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 

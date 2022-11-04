@@ -41,7 +41,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 
 	foundUsers := authdb.FindUserByUsername(username, sqlDb)
 	if len(foundUsers) == 0 {
-		w.WriteHeader(http.StatusForbidden)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 

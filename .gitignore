@@ -15,7 +15,11 @@
 *.db
 
 # File server files to serve
+cmd/kerb-fs/files
 *.txt
+
+# Output Binaries from Makefile
+/kerberos
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

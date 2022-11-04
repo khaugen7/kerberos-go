@@ -20,7 +20,7 @@ var expectedUserResult = authdb.UserAuth{
 	FirstName: "John",
 	LastName:  "Doe",
 	Username:  "jdoe42",
-	Key:       "73301dd4c87b616cb06cfd8a3ad3686538b6eeee733768851c01698a5ffe6335",
+	Key:       "18445eb01497746de56289359f0a252681b79a612ef6223e76b0c581d9bab6a4",
 }
 
 func TestGatherUserInfo(t *testing.T) {
