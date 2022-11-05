@@ -147,7 +147,7 @@ Login credentials: `admin admin`
 
 From here you can Add, Find, Update, and Delete users using the menu options available to you. Note: the client user must exist in the database for the client application to authenticate successfully
 
-### Server
+#### Server
 
 In the absence of the `-admin` flag, the server operates as a regular server listening on the specified host:port combination - default is `127.0.0.1:8555`
 
@@ -228,11 +228,11 @@ Once the authentication database is initialized, the program operates as a regul
 
 ## Examples
 
-### Running `kerb-as` for the first time:
+#### Running `kerb-as` for the first time:
 
 `./kerb-as -admin`
 
-### Running `kerb-as` with non-default database location:
+#### Running `kerb-as` with non-default database location:
 
 `./kerb-as -db <path/to/db/file.db>`
 
@@ -240,14 +240,14 @@ or
 
 `./kerb-as -db <path/to/directory/for/db>`
 
-### Running any server with default options
+#### Running any server with default options
 
 `./kerb-as` `./kerb-tgs` `./kerb-fs`
 
-### Running client with default options
+#### Running client with default options
 
 `./kerb-client test.txt`
 
-### Running client with non-default address for TGS (or any other server)
+#### Running client with non-default address for TGS (or any other server)
 
 `./kerb-client -tgsh 127.0.0.2 -tgsp 9000 test.txt`
