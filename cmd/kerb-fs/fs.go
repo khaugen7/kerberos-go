@@ -6,9 +6,11 @@ import (
 	"errors"
 	"path/filepath"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,6 +22,7 @@ import (
 
 var sqlitePath string
 var db *sql.DB
+var help bool
 
 var (
 	host string
@@ -30,11 +33,17 @@ func parseFlags() {
 	flag.StringVar(&sqlitePath, "db", "", "Directory for Sqlite db")
 	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
 	flag.IntVar(&port, "p", 8755, "Server port")
+	flag.BoolVar(&help, "help", false, "Display help")
 	flag.Parse()
 }
 
 func main() {
 	parseFlags()
+
+	if help {
+		displayHelp()
+	}
+
 	addr := host + ":" + strconv.Itoa(port)
 	db = authdb.SqliteConnect(sqlitePath)
 
@@ -106,5 +115,9 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-
+func displayHelp() {
+	fmt.Println("\nUsage: kerb-fs [-db PATH] [-h HOST] [-p PORT] [-help]")
+	flag.PrintDefaults()
+	os.Exit(0)
+}
 

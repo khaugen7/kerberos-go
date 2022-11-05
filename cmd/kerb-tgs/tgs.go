@@ -5,9 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/khaugen7/kerberos-go/internal/authdb"
@@ -17,6 +19,7 @@ import (
 
 var sqlitePath string
 var db *sql.DB
+var help bool
 
 var (
 	host string
@@ -27,11 +30,17 @@ func parseFlags() {
 	flag.StringVar(&sqlitePath, "db", "", "Directory for Sqlite db")
 	flag.StringVar(&host, "h", "127.0.0.1", "Server host")
 	flag.IntVar(&port, "p", 8655, "Server port")
+	flag.BoolVar(&help, "help", false, "Display help")
 	flag.Parse()
 }
 
 func main() {
 	parseFlags()
+
+	if help {
+		displayHelp()
+	}
+	
 	addr := host + ":" + strconv.Itoa(port)
 	db = authdb.SqliteConnect(sqlitePath)
 
@@ -99,4 +108,10 @@ func handleTicket(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Key-Length", keyLen)
 
 	w.Write(response)
+}
+
+func displayHelp() {
+	fmt.Println("\nUsage: kerb-tgs [-db PATH] [-h HOST] [-p PORT] [-help]")
+	flag.PrintDefaults()
+	os.Exit(0)
 }

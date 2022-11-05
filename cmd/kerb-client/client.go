@@ -18,6 +18,7 @@ import (
 )
 
 var verbose bool
+var help bool
 
 var (
 	asHost  string
@@ -32,20 +33,29 @@ var (
 )
 
 func parseFlags() {
-	flag.BoolVar(&verbose, "v", false, "Verbose logging")
 	flag.StringVar(&asHost, "ash", "127.0.0.1", "Authentication server host")
 	flag.IntVar(&asPort, "asp", 8555, "Authentication server port")
 	flag.StringVar(&tgsHost, "tgsh", "127.0.0.1", "Ticket granting server host")
 	flag.IntVar(&tgsPort, "tgsp", 8655, "Ticket granting server port")
 	flag.StringVar(&fsHost, "fsh", "127.0.0.1", "File server host")
 	flag.IntVar(&fsPort, "fsp", 8755, "File server port")
+	flag.BoolVar(&verbose, "v", false, "Verbose logging")
+	flag.BoolVar(&help, "help", false, "Display help")
 	flag.Parse()
 }
 
 func main() {
 	parseFlags()
+
+	if help {
+		displayHelp()
+		os.Exit(0)
+	}
+
 	if len(flag.Args()) == 0 {
-		log.Fatalf("Missing requested filename!")
+		log.Println("Missing requested filename!")
+		displayHelp()
+		os.Exit(1)
 	}
 
 	reqFile := flag.Arg(0)
@@ -57,6 +67,7 @@ func main() {
 
 	logVerbose("Requesting authentication for user " + u + " with Kerberos authentication server")
 	encTgsSessionKey, tgt := requestAuthorization(u, asAddr)
+	logVerbose("Success!")
 
 	userKey := encryption.DeriveSecretKey(u, p)
 
@@ -71,6 +82,7 @@ func main() {
 
 	logVerbose("Requesting service ticket from ticket granting server")
 	encFsSessionKey, st := requestServiceTicket(encTgsAuth, tgt, tgsAddr)
+	logVerbose("Success!")
 
 	var fsSessionKey []byte
 	encryption.Decrypt(tgsSessionKey, encFsSessionKey, &fsSessionKey)
@@ -78,7 +90,7 @@ func main() {
 	fsAuth := generateAuth(u)
 	encFsAuth, _ := encryption.Encrypt(fsSessionKey, fsAuth)
 
-	logVerbose("")
+	logVerbose("Requesting file for download from file server")
 	file := requestFile(encFsAuth, st, reqFile, fsAddr)
 	fmt.Printf("Successfully authenticated via the Kerberos protocol and retrieved file %s", file)
 }
@@ -194,4 +206,10 @@ func logVerbose(msg string) {
 	if verbose {
 		fmt.Println(msg)
 	}
+}
+
+func displayHelp() {
+	fmt.Println("\nUsage: kerb-client [-ash HOST] [-asp PORT] [-ash HOST] [-asp PORT] [-ash HOST] [-asp PORT] [-v verbose] [-help] filename")
+	flag.PrintDefaults()
+	fmt.Println("filename string\n\tFilename to request from the server")
 }
